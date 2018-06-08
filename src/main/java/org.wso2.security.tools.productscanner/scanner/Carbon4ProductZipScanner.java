@@ -108,7 +108,7 @@ public class Carbon4ProductZipScanner implements ProductScanner{
 
         //Wait for completion of all the threads
         log.info(consoleTag + "Started waiting for DbLookup threads to complete.");
-        for (Future<Carbon4ProductZipScannerDbLookupTask.RepoArtifactInternal> artifactInfoFuture : futureList) {
+        futureList.parallelStream().forEach(artifactInfoFuture -> {
             Carbon4ProductZipScannerDbLookupTask.RepoArtifactInternal repoArtifact = artifactInfoFuture.get();
 
             String formattedFilePath = repoArtifact.getFile().getAbsolutePath().substring(extractLocation.getAbsolutePath().length(), repoArtifact.getFile().getAbsolutePath().length());
@@ -142,7 +142,9 @@ public class Carbon4ProductZipScanner implements ProductScanner{
                     sourceDownloader.downloadSource(consoleTag, repoArtifact.getRepoArtifact(), formattedFileName,scanFile.getParentFile());
                 }
             }
-        }
+        });
+        //for (Future<Carbon4ProductZipScannerDbLookupTask.RepoArtifactInternal> artifactInfoFuture : futureList) {
+        //}
 
         //Do cleanup and storage release
         log.info(consoleTag + "All DbLookup threads completed. Clean up tasks started.");

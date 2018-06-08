@@ -32,7 +32,7 @@ public class GitRepoDownloader implements RepoDownloader {
                 log.info(consoleTag + "[CacheMiss] Unable to locate " + repo.getRepositoryName() + "-Tag-" + repo.getTagName() + " in \"source-cache\"");
                 log.info(consoleTag + "Downloading started");
                 downloadFile(repo.getTagZip(), tempZipFile);
-                log.info(consoleTag + "Downloading completed");
+                log.info(consoleTag + "Downloading completed : " + tempZipFile.getAbsolutePath());
 
                 FileUtils.copyFileToDirectory(tempZipFile, sourceCacheFolder);
                 unzip(tempZipFile, destinationFolder);
