@@ -35,7 +35,7 @@ public class Carbon4ProductZipScannerDbLookupTask implements Callable<Carbon4Pro
         RepoArtifact repoArtifact = storage.searchFinalName(finalName1);
         if(repoArtifact == null) {
             if(finalName1.contains("_")) {
-                String finalName2 = finalName1.substring(0, finalName1.lastIndexOf('_')) + "-" + finalName1.substring(finalName1.lastIndexOf('_'), finalName1.length());
+                String finalName2 = finalName1.substring(0, finalName1.lastIndexOf('_')) + "-" + finalName1.substring(finalName1.lastIndexOf('_') + 1, finalName1.length());
                 log.info(consoleTag + "Scanning database for:  " + finalName2);
                 repoArtifact = storage.searchFinalName(finalName2);
             }
