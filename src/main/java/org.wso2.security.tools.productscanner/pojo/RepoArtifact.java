@@ -41,6 +41,10 @@ public class RepoArtifact {
     @Column(name = "ADDED_DATE")
     private Date addedDate;
 
+    public RepoArtifact() {
+
+    }
+
     public RepoArtifact(Repo repo, String path, String mavenId, String finalName) {
         String[] mavenIdParts = mavenId.split(":");
         this.path = path;
