@@ -16,10 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 /**
  * Created by ayoma on 4/17/17.
@@ -108,38 +105,50 @@ public class Carbon4ProductZipScanner implements ProductScanner{
 
         //Wait for completion of all the threads
         log.info(consoleTag + "Started waiting for DbLookup threads to complete.");
+        String finalProductName = productName;
+        String finalProductVersion = productVersion;
+        String finalCarbonVersionText = carbonVersionText;
+        String finalVersionText = versionText;
         futureList.parallelStream().forEach(artifactInfoFuture -> {
-            Carbon4ProductZipScannerDbLookupTask.RepoArtifactInternal repoArtifact = artifactInfoFuture.get();
+            Carbon4ProductZipScannerDbLookupTask.RepoArtifactInternal repoArtifact = null;
+            try {
+                repoArtifact = artifactInfoFuture.get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+            if (repoArtifact != null) {
+                String formattedFilePath = repoArtifact.getFile().getAbsolutePath().substring(extractLocation.getAbsolutePath().length(), repoArtifact.getFile().getAbsolutePath().length());
 
-            String formattedFilePath = repoArtifact.getFile().getAbsolutePath().substring(extractLocation.getAbsolutePath().length(), repoArtifact.getFile().getAbsolutePath().length());
+                Product product = new Product(scanFile.getName(), finalProductName, finalProductVersion, finalCarbonVersionText, finalVersionText);
+                ProductArtifact productArtifact = new ProductArtifact(product, repoArtifact.getFile().getName(), formattedFilePath, repoArtifact.getRepoArtifact());
 
-            Product product = new Product(scanFile.getName(), productName, productVersion, carbonVersionText, versionText);
-            ProductArtifact productArtifact = new ProductArtifact(product, repoArtifact.getFile().getName(), formattedFilePath, repoArtifact.getRepoArtifact());
-
-            List<File> deploymentArtifactCollection = new ArrayList<File>();
-            for (File file : sourceFiles) {
-                if(file.getAbsolutePath().toLowerCase().contains("repository" + File.separator+"deployment"+File.separator + "server" + File.separator) && file.isDirectory()) {
-                    deploymentArtifactCollection.add(file);
+                List<File> deploymentArtifactCollection = new ArrayList<File>();
+                for (File file : sourceFiles) {
+                    if (file.getAbsolutePath().toLowerCase().contains("repository" + File.separator + "deployment" + File.separator + "server" + File.separator) && file.isDirectory()) {
+                        deploymentArtifactCollection.add(file);
+                    }
                 }
-            }
 
-            storage.persist(productArtifact);
+                storage.persist(productArtifact);
 
-            for(File deploymentArtifactFile : deploymentArtifactCollection) {
-                String formattedDeploymentArtifactFile = deploymentArtifactFile.getAbsolutePath().substring(extractLocation.getAbsolutePath().length(),deploymentArtifactFile.getAbsolutePath().length());
-                ProductDeploymentArtifact productDeploymentArtifact = new ProductDeploymentArtifact(product, formattedDeploymentArtifactFile);
+                for (File deploymentArtifactFile : deploymentArtifactCollection) {
+                    String formattedDeploymentArtifactFile = deploymentArtifactFile.getAbsolutePath().substring(extractLocation.getAbsolutePath().length(), deploymentArtifactFile.getAbsolutePath().length());
+                    ProductDeploymentArtifact productDeploymentArtifact = new ProductDeploymentArtifact(product, formattedDeploymentArtifactFile);
 
-                storage.persist(productDeploymentArtifact);
-            }
+                    storage.persist(productDeploymentArtifact);
+                }
 
-            if(repoArtifact.getRepoArtifact() == null) {
-                log.error(consoleTag + "[DBMiss] No database entry for artifact: " + repoArtifact.getFile().getAbsolutePath());
-            } else {
-                log.info(consoleTag + "[DbHit] Database entry found for artifact: " + repoArtifact.getFile().getAbsolutePath());
-                if(AppConfig.isDownloadSource()) {
-                    log.info(consoleTag + "Source download started for: " + repoArtifact.getFile().getAbsolutePath());
-                    String formattedFileName = repoArtifact.getFile().getName().substring(0, repoArtifact.getFile().getName().lastIndexOf('.'));
-                    sourceDownloader.downloadSource(consoleTag, repoArtifact.getRepoArtifact(), formattedFileName,scanFile.getParentFile());
+                if (repoArtifact.getRepoArtifact() == null) {
+                    log.error(consoleTag + "[DBMiss] No database entry for artifact: " + repoArtifact.getFile().getAbsolutePath());
+                } else {
+                    log.info(consoleTag + "[DbHit] Database entry found for artifact: " + repoArtifact.getFile().getAbsolutePath());
+                    if (AppConfig.isDownloadSource()) {
+                        log.info(consoleTag + "Source download started for: " + repoArtifact.getFile().getAbsolutePath());
+                        String formattedFileName = repoArtifact.getFile().getName().substring(0, repoArtifact.getFile().getName().lastIndexOf('.'));
+                        sourceDownloader.downloadSource(consoleTag, repoArtifact.getRepoArtifact(), formattedFileName, scanFile.getParentFile());
+                    }
                 }
             }
         });
