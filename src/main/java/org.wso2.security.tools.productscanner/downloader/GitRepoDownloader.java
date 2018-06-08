@@ -34,7 +34,7 @@ public class GitRepoDownloader implements RepoDownloader {
                 downloadFile(repo.getTagZip(), tempZipFile);
                 log.info(consoleTag + "Downloading completed");
 
-                //FileUtils.copyFile(tempZipFile, sourceCacheFolder);
+                FileUtils.copyFileToDirectory(tempZipFile, sourceCacheFolder);
                 unzip(tempZipFile, destinationFolder);
 
                 log.info(consoleTag + "Extracted and cached: " + tempZipFile.getAbsolutePath());
